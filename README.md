@@ -4,6 +4,9 @@ np/
 │   ├── bjorklund.go
 │   └── williams.go
 └── lectures/
-    ├── Lecture 1. Introduction.md
-    └── Lecture 2. Reductions.md
+    ├── Лекция 1. Введение в NP/
+    │   └── leclture.md
+    └── Лекция 2. Сведение SAT/
+        ├── resources/
+        └── lecture.md
 ```
