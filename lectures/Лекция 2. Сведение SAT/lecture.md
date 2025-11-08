@@ -84,9 +84,9 @@ _В приведённом ниже материале используются 
 >
 > $$
 > \begin{align*}
-> (x_1 \vee x_2 \vee \ldots \vee x_m) = (&\overline{y} \vee x_1 \vee \ldots \vee x_{m-2}) \ \wedge \\
-> (&y \vee \overline{x_1}) \wedge \ldots \wedge (y \vee \overline{x_{m-2}}) \ \wedge \\
-> (&y \vee x_{m-1} \vee x_m)
+> (x_1 \vee x_2 \vee \ldots \vee x_m) = &(\overline{y} \vee x_1 \vee \ldots \vee x_{m-2}) \ \wedge \\
+> &(y \vee \overline{x_1}) \wedge \ldots \wedge (y \vee \overline{x_{m-2}}) \ \wedge \\
+> &(y \vee x_{m-1} \vee x_m)
 > \end{align*}
 > $$
 >
@@ -96,9 +96,9 @@ _В приведённом ниже материале используются 
 >
 > $$
 > \begin{align*}
-> (x_1 \vee x_2 \vee \ldots \vee x_m) = (&y \vee x_3 \vee \ldots \vee x_m) \ \wedge \\
-> (&y \vee \overline{x_1}) \wedge (y \vee \overline{x_2}) \ \wedge \\
-> (&\overline{y} \vee x_1 \vee x_2)
+> (x_1 \vee x_2 \vee \ldots \vee x_m) = &(y \vee x_3 \vee \ldots \vee x_m) \ \wedge \\
+> &(y \vee \overline{x_1}) \wedge (y \vee \overline{x_2}) \ \wedge \\
+> &(\overline{y} \vee x_1 \vee x_2)
 > \end{align*}
 > $$
 >
@@ -108,9 +108,9 @@ _В приведённом ниже материале используются 
 >
 > $$
 > \begin{align*}
-> (x_1 \vee x_2 \vee \ldots \vee x_m) = (&x_1 \vee x_2 \vee \overline{y_1}) \ \wedge \\
-> (&x_3 \vee y_1 \vee \overline{y_2}) \wedge \ldots \wedge (x_{m_2} \vee y_{m-4} \vee \overline{y_{m-3}}) \ \wedge \\
-> (&x_{m-1} \vee x_m \vee y_{m-3})
+> (x_1 \vee x_2 \vee \ldots \vee x_m) = &(x_1 \vee x_2 \vee \overline{y_1}) \ \wedge \\
+> &(x_3 \vee y_1 \vee \overline{y_2}) \wedge \ldots \wedge (x_{m_2} \vee y_{m-4} \vee \overline{y_{m-3}}) \ \wedge \\
+> &(x_{m-1} \vee x_m \vee y_{m-3})
 > \end{align*}
 > $$
 >
