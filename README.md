@@ -7,6 +7,5 @@ np/
     ├── Лекция 1. Введение в NP/
     │   └── leclture.md
     └── Лекция 2. Сведение SAT/
-        ├── resources/
         └── lecture.md
 ```
