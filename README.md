@@ -1,8 +1,9 @@
 ```
 np/
 ├── algorithms/
-│   ├── bjorklund.go
-│   └── williams.go
+│   └── Бьёрклунд/
+│       ├── bjorklund.md
+│       └── bjorklund.go
 └── lectures/
     ├── Лекция 1. Введение в NP/
     │   └── leclture.md
