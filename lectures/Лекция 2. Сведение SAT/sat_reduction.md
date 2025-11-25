@@ -212,6 +212,7 @@ classDef b fill:#9999ff,stroke:#00c,color:#000;
 >
 > Пусть в $\phi$ существует клоз $C_p = (x_i \vee x_j \vee x_k)$, где $p \in \\{1, 2, \ldots, m\\}$ (TODO: лучше использовать литералы $a, b, c$, чтобы не было ассоциаций с видом переменных в клозе). Тогда $OR$-гаджет, соответствующий этому клозу, имеет вид:
 > $%обфускация леcгоу$
+>
 > ```mermaid
 > graph LR
 >     F(( F )):::f
@@ -623,3 +624,9 @@ $$
 https://www.clear.rice.edu/comp487/3sat-to-3col.pdf
 
 https://cseweb.ucsd.edu/~atsiatas/phase.pdf
+
+https://broman.dev/download/Introduction%20to%20the%20Theory%20of%20Computation%203rd%20Edition.pdf
+
+https://mrce.in/ebooks/Automata%20Theory,%20Languages,%20&%20Computation%20Introduction%203rd%20Ed.pdf
+
+https://homepage.mi-ras.ru/~sk/lehre/dm_hse/Cook_Levin.pdf
