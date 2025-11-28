@@ -96,20 +96,20 @@ $$
 
 ### C. Определитель
 
-**Утверждение.** Определитель матрицы $\Alpha$ размера $n \times n$ над кольцом характеристики два совпадает с _перманентом_, то есть:
+**Утверждение.** Определитель матрицы $\Theta$ размера $n \times n$ над кольцом характеристики два совпадает с _перманентом_, то есть:
 
 $$
-\mathrm{det}(\Alpha) = \mathrm{per}(\Alpha) = \sum_{\sigma \ : \ [n] \rightarrow [n]} \prod_{i = 1}^{n} \Alpha_{i, \sigma}(i),
+\mathrm{det}(\Theta) = \mathrm{per}(\Theta) = \sum_{\sigma \ : \ [n] \rightarrow [n]} \prod_{i = 1}^{n} \Theta_{i, \sigma}(i),
 $$
 
 где сумма идёт по всем перестановкам $n$ элементов.
 
 > **Замечание.** Данный факт исходит из того, что в кольце характеристики два для любого элемента $-x + x = x + x = 0 \Rightarrow -x = x$.
 
-Перманент можно интерпретировать как сумму взвешенных покрытий циклами направленного графа. Иначе говоря, пусть $D = (V, A)$ - направленный граф с весами $w \ : \ A \rightarrow R$, определим матрицу $\Alpha$ размера $|V| \times |V|$ с строками и столбцами в качестве вершин $V$
+Перманент можно интерпретировать как сумму взвешенных покрытий циклами направленного графа. Иначе говоря, пусть $D = (V, A)$ - направленный граф с весами $w \ : \ A \rightarrow R$, определим матрицу $\Theta$ размера $|V| \times |V|$ с строками и столбцами в качестве вершин $V$
 
 $$
-\Alpha_{i, j} =
+\Theta_{i, j} =
 \begin{cases}
 \begin{aligned}
 &w(ij) &: ij \in A \\
@@ -122,7 +122,7 @@ $$
 
 $$
 \begin{align}
-\mathrm{per}(\Alpha) = \sum_{C \in cc(D)} \prod_{a \in C} w(a)
+\mathrm{per}(\Theta) = \sum_{C \in cc(D)} \prod_{a \in C} w(a)
 \end{align}
 $$
 
@@ -211,14 +211,24 @@ $$
 > $$
 > p(f, r) =
 > \sum_{C \in cc(D)}
-> \sum_{\substack{q : C \to 2^L / \\{\emptyset\\}\\\bigcup_{a \in C} q(a) = L}} r^{\sum{a \in C} |q(a)|}
-> \prod_{a \in C} f(a, q(a))
+> \sum_{\substack{
+> q : C \to 2^L / \\{\emptyset\\} \\
+> \bigcup_{a \in C} q(a) = L
+> }}
+> r^{\sum_{a \in C} |q(a)|} \prod_{a \in C} f(a, q(a))
 > $$
 >
 > И в частности, коэффицикент при $r^{|L|}$
 >
 > $$
-> [r^{|L|}] p(f, r) = \sum_{C \in cc(D)} \sum_{\substack{q : C \to 2^L / \\{\emptyset\\} \\ \bigcup_{a \in C} q(a) = L \\ \forall a \neq b \ : \ q(a) \cap q(b) = \emptyset}} \prod_{a \in C} f(a, q(a))
+> [r^{|L|}] p(f, r) =
+> \sum_{C \in cc(D)}
+> \sum_{\substack{
+> q : C \to 2^L / \\{\emptyset\\} \\
+> \bigcup_{a \in C} q(a) = L \\
+> \forall a \neq b \ : \ q(a) \cap q(b) = \emptyset
+> }}
+> \prod_{a \in C} f(a, q(a))
 > $$
 >
 > Заметим, что $q$ отображает в подмножетсва, состоящие из одного элемента, то есть в элементы $L$. Обращая функцию $q$ получаем исходное определение суммы маркированных покрытий $(1)$.
