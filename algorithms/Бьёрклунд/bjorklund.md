@@ -232,3 +232,542 @@ $$
 > $$
 >
 > Заметим, что $q$ отображает в подмножетсва, состоящие из одного элемента, то есть в элементы $L$. Обращая функцию $q$ получаем исходное определение суммы маркированных покрытий $(1)$.
+
+```go
+// Задача о гамильтоновом цикле. Алгоритм Бьёрклунда
+
+// Соколовский Роман - 2025 г.
+
+package main
+
+import (
+	"fmt"
+	"math/rand"
+)
+
+// n - количество вершин (2 <= n <= 50)
+var n int
+
+// G - двунаправленный граф
+var G [][]uint8
+
+// s - специальная вершина
+var s int
+
+// k - степень конечного поля GF(2^k) (2 <= k <= 10)
+var k int
+
+// irredpolys - неприводимые полиномы над полем k-ой степени
+// https://www.jjj.de/mathdata/all-irredpoly.txt
+var irredpolys [10]uint16 = [10]uint16{
+	0b111,          // 2,1,0
+	0b1011,         // 3,1,0
+	0b10011,        // 4,1,0
+	0b100101,       // 5,2,0
+	0b1000011,      // 6,1,0
+	0b10000011,     // 7,1,0
+	0b100011101,    // 8,4,3,2,0
+	0b1000010000,   // 9,4,0
+	0b10000001000,  // 10,3,0
+	0b100000000100, // 11,2,0
+}
+
+func mul_gf(a uint16, b uint16) uint16 {
+	var r uint16
+
+	for range k {
+		if b&1 > 0 {
+			r ^= a
+		}
+		hi := a & (1 << (k - 1))
+		a <<= 1
+		if hi > 0 {
+			a ^= irredpolys[k-2]
+		}
+		b >>= 1
+	}
+	return r & ((1 << k) - 1)
+}
+
+func lccs[T any](D [][]uint8, L []T, f func(int, int, []T) uint16) {
+
+}
+
+// func hamiltonicity_bipartite() bool {
+// 	// L - матрица значений переменных x_{u,v}
+// 	L := make([][]uint16, n)
+// 	for i := range n {
+// 		L[i] = make([]uint16, n)
+// 	}
+
+// 	// g - генератор чисел в GF(2^k)
+// 	var g uint16 = irredpolys[k-2]
+
+// 	// r - начальный элемент для генерации чисел из GF(2^k)
+// 	var r uint16 = 1
+
+// 	// Присваеваем значения для переменных x_{u,v}
+// 	for i := range n - 1 {
+// 		for j := n - 1; j > i; j-- {
+// 			if G[i][j] > 0 {
+// 				L[i][j] = r
+// 				L[j][i] = r
+// 				r = mul_gf(r, g)
+// 			}
+// 		}
+// 	}
+
+// 	// Делаем так, чтобы x_{u,v} != x_{v,u} при u == s || v == s
+// 	for i := n - 1; i >= 0; i-- {
+// 		if L[i][s] == 0 || i == s {
+// 			continue
+// 		}
+// 		if i < s {
+// 			L[s][i] = mul_gf(L[i][s], g)
+// 		} else {
+// 			L[i][s] = mul_gf(L[s][i], g)
+// 		}
+// 	}
+
+// 	fmt.Println("L =")
+// 	for _, row := range L {
+// 		fmt.Println(row)
+// 	}
+
+// 	// f := func(u int, v int, X []int) uint16 {
+// 	// 	if len(X) != 1 {
+// 	// 		return 0
+// 	// 	}
+// 	// 	w := X[0]
+// 	// 	return mul_gf(L[u][w], L[w][v])
+// 	// }
+// 	return true
+// }
+
+func hamiltonicity(V1 []int, V2 []int, m int) {
+	// Берем k из условия 2^k > c*n
+	for i := 10; i > 0; i-- {
+		if ((len(V1))*(len(V2)+m))&(1<<i) > 0 {
+			k = i + 1
+			break
+		}
+	}
+
+	// Собираем множество маркировок
+	L := make([]int, len(V2)+m)
+	copy(L, V2)
+
+	// Делаем маркировки из L_m отрицательными числами
+	for i := n; i < len(V2)+m; i++ {
+		L[i] = -L[i-n]
+	}
+
+	// Вводим переменные x_{u,v,d} для арок в V1 и присваеваем им случайные значения
+	// x_{u,v,0} = x_{u,v}
+	VARS := make([][][]uint16, len(V1))
+	for i := range len(V1) {
+		VARS[i] = make([][]uint16, len(V1))
+		for j := range len(V1) {
+			VARS[i][j] = make([]uint16, m+1)
+		}
+
+	}
+
+	// g - генератор чисел в GF(2^k)
+	var g uint16 = irredpolys[k-2]
+
+	// r - начальный элемент для генерации чисел из GF(2^k)
+	var r uint16 = uint16(rand.Uint32())
+
+	// Присваеваем значения для переменных x_{u,v}
+	for i := range n - 1 {
+		for j := n - 1; j > i; j-- {
+			for p := range m + 1 {
+				if G[i][j] > 0 {
+					VARS[i][j][p] = r
+					VARS[j][i][p] = r
+
+				}
+			}
+			r = mul_gf(r, g)
+		}
+	}
+
+	// Делаем так, чтобы x_{u,v} != x_{v,u} при u == s || v == s
+	for i := n - 1; i >= 0; i-- {
+		for j := range m + 1 {
+			if VARS[i][s][j] == 0 || i == s {
+				continue
+			}
+			if i < s {
+				VARS[s][i][m] = mul_gf(VARS[i][s][m], g)
+			} else {
+				VARS[i][s][m] = mul_gf(VARS[s][i][m], g)
+			}
+		}
+
+	}
+}
+
+func main() {
+	// K - количество ребёр
+	var K int
+
+	fmt.Scan(&n, &K)
+
+	G = make([][]uint8, n)
+	for i := 0; i < n; i++ {
+		G[i] = make([]uint8, n)
+	}
+
+	// U1, U2 - множества вершин в графе (|U1| = |U2|)
+	V1, V2 := make([]string, n), make([]string, n)
+
+	// a, b - вершины V1 и V2 соответственно
+	var a, b string
+
+	// p, q - вспомогательные счётчики для составления графа
+	var p, q int
+
+	for range K {
+		fmt.Scan(&a, &b)
+
+		for i := range V1 {
+			if (V1[i] == "") || (V1[i] == a) {
+				if V1[i] == "" {
+					V1[i] = a
+				}
+				p = i
+				break
+			}
+		}
+
+		for j := range V2 {
+			if (V2[j] == "") || (V2[j] == b) {
+				if V2[j] == "" {
+					V2[j] = b
+				}
+				q = j
+				break
+			}
+		}
+
+		G[p][q+n/2] = 1
+		G[q+n/2][p] = 1
+	}
+
+	s = 1
+
+	// Для двудольного графа берём m = 0
+	hamiltonicity()
+
+	// for _, row := range G {
+	// 	fmt.Println(row)
+	// }
+}
+
+```
+
+```go
+// Хоровод. Задача о гамильтоновом цикле в двудольном графе. Алгоритм Бьёрклунда
+
+// Соколовский Роман - 2025 г.
+
+package main
+
+import (
+	"fmt"
+	"math/rand"
+)
+
+// n - количество вершин (2 <= n <= 50)
+var n int
+
+// G - двунаправленный двудольный граф
+var G [][]uint8
+
+// s - специальная вершина
+var s int
+
+// k - степень конечного поля GF(2^k) (2 <= k <= 10)
+var k int
+
+// irredpolys - неприводимые полиномы над полем k-ой степени
+// https://www.jjj.de/mathdata/all-irredpoly.txt
+var irredpolys [7]uint8 = [7]uint8{
+	0b111,      // 2,1,0
+	0b1011,     // 3,1,0
+	0b10011,    // 4,1,0
+	0b100101,   // 5,2,0
+	0b1000011,  // 6,1,0
+	0b10000011, // 7,1,0
+}
+
+func mul_gf(a_ uint8, b_ uint8) uint8 {
+	// При умножении количество требуемых байт может увеличиться вдвое
+	var r uint16
+	a, b := uint16(a_), uint16(b_)
+	irredpoly := uint16(irredpolys[k-2])
+
+	for range k {
+		if b&1 > 0 {
+			r ^= a
+		}
+		hi := a & (1 << (k - 1))
+		a <<= 1
+		if hi > 0 {
+			a ^= irredpoly
+		}
+		b >>= 1
+	}
+	return uint8(r)
+}
+
+func matmul_gf(A [][]uint8, B [][]uint8) [][]uint8 {
+	AB := make([][]uint8, len(A))
+	for i := range len(A) {
+		AB[i] = make([]uint8, len(B[0]))
+		for j := range len(B[0]) {
+			for k := range len(B) {
+				AB[i][j] += mul_gf(A[i][k], B[k][j])
+			}
+		}
+	}
+	fmt.Println("AB =")
+	for _, row := range AB {
+		fmt.Println(row)
+	}
+	return AB
+}
+
+// Умножение матрицы A на транспонированную B
+func matmul_transpose_gf(A [][]uint8, B [][]uint8) [][]uint8 {
+	AB := make([][]uint8, len(A))
+	for i := range len(A) {
+		AB[i] = make([]uint8, len(B))
+		for j := range len(B) {
+			for k := range len(B[0]) {
+				AB[i][j] += mul_gf(A[i][k], B[j][k])
+			}
+		}
+	}
+	fmt.Println("AB_T =")
+	for _, row := range AB {
+		fmt.Println(row)
+	}
+	return AB
+}
+
+func hamiltonicity(V1 []int, V2 []int) bool {
+	// Собираем множество маркировок
+	L := make([]int, len(V2))
+	copy(L, V2)
+
+	// Вводим переменные x_{u,v} для арок в G и присваиваем им случайные значения
+	VARS := make([][]uint8, n)
+	for i := range n {
+		VARS[i] = make([]uint8, n)
+	}
+
+	// g - генератор чисел в GF(2^k)
+	var g uint8 = irredpolys[k-2]
+
+	// r - случайный начальный элемент для генерации чисел из GF(2^k)
+	var r uint8 = uint8(rand.Uint32()) & ((1 << k) - 1)
+
+	fmt.Printf("g = %d, r = %d\n", g, r)
+
+	// Присваиваем значения для переменных x_{u,v}
+	for i := range n - 1 {
+		for j := n - 1; j > i; j-- {
+			// В теории присваиваем значения всем рёбрам, но
+			// можно и так, потому что это условие останется,
+			// просто будет в другом месте
+			if G[i][j] > 0 {
+				VARS[i][j] = r
+				VARS[j][i] = r
+				r = mul_gf(r, g)
+			}
+		}
+	}
+
+	// Делаем так, чтобы x_{u,v} != x_{v,u} при u == s || v == s
+	for i := n - 1; i >= 0; i-- {
+		if VARS[i][s] == 0 || i == s {
+			continue
+		}
+		if i < s {
+			VARS[s][i] = mul_gf(VARS[i][s], g)
+		} else {
+			VARS[i][s] = mul_gf(VARS[s][i], g)
+		}
+	}
+
+	for _, row := range G {
+		fmt.Println(row)
+	}
+
+	for _, row := range VARS {
+		fmt.Println(row)
+	}
+
+	// Ищем все поднможества маркировок Y \subseteq L
+	sc := 1 << len(L)
+	for Y_mask := 1; Y_mask < sc; Y_mask++ {
+		var Y_power int
+
+		for i := 0; i < len(L); i++ {
+			if Y_mask&(1<<i) > 0 {
+				Y_power += 1
+			}
+		}
+
+		Y := make([]int, Y_power)
+		var p int
+		for i := 0; i < len(L); i++ {
+			if Y_mask&(1<<i) > 0 {
+				Y[p] = L[i]
+				p += 1
+			}
+		}
+
+		fmt.Println("Y_mask =")
+		fmt.Println(Y_mask)
+		fmt.Println("Y =")
+		fmt.Println(Y)
+
+		// Инициализируем память для матрицы под перманентом
+		T := make([][]uint8, len(V1))
+		for i := range len(V1) {
+			T[i] = make([]uint8, len(V1))
+		}
+
+		// Находим коффициенты для матрицы T
+		for u := range len(V1) {
+			for v := range len(V1) {
+				if u == v {
+					continue
+				}
+
+				// Согласно науке создаём матрицы A и B
+				A := make([][]uint8, Y_power)
+				for i := range Y_power {
+					A[i] = make([]uint8, Y_power)
+					for j := range Y_power {
+						if VARS[Y[i]][Y[j]] > 0 {
+							A[i][j] = VARS[Y[i]][Y[j]]
+						}
+					}
+				}
+
+				B := make([][]uint8, len(V1))
+				for i := range len(V1) {
+					B[i] = make([]uint8, Y_power)
+					for j := range Y_power {
+						fmt.Println(i, j, Y, L, Y_power, VARS[i][Y[j]])
+						B[i][j] = VARS[i][Y[j]]
+					}
+				}
+				// fmt.Println(u, v)
+				// fmt.Println("A =")
+				// for _, row := range A {
+				// 	fmt.Println(row)
+				// }
+				// fmt.Println("B =")
+				// for _, row := range B {
+				// 	fmt.Println(row)
+				// }
+				// for _, row := range matmul_transpose_gf(matmul_gf(B, A), B) {
+				// 	fmt.Println(row)
+				// }
+				T[u][v] = matmul_transpose_gf(matmul_gf(B, A), B)[u][v]
+			}
+		}
+
+		fmt.Println("T =")
+		for _, row := range T {
+			fmt.Println(row)
+		}
+	}
+
+	return true
+}
+
+func main() {
+	// K - количество ребёр
+	var K int
+
+	fmt.Scan(&n, &K)
+
+	G = make([][]uint8, n)
+	for i := 0; i < n; i++ {
+		G[i] = make([]uint8, n)
+	}
+
+	// U1, U2 - множества вершин в графе (|U1| = |U2| = n/2)
+	U1, U2 := make([]string, n/2), make([]string, n/2)
+
+	// a, b - вершины V1 и V2 соответственно
+	var a, b string
+
+	// p, q - вспомогательные счётчики для составления графа
+	var p, q int
+
+	for range K {
+		fmt.Scan(&a, &b)
+
+		for i := range U1 {
+			if (U1[i] == "") || (U1[i] == a) {
+				if U1[i] == "" {
+					U1[i] = a
+				}
+				p = i
+				break
+			}
+		}
+
+		for j := range U2 {
+			if (U2[j] == "") || (U2[j] == b) {
+				if U2[j] == "" {
+					U2[j] = b
+				}
+				q = j
+				break
+			}
+		}
+
+		G[p][q+n/2] = 1
+		G[q+n/2][p] = 1
+	}
+
+	// Берем k из условия 2^k > c*n
+	c := 2
+	for i := 10; i > 0; i-- {
+		if (c*n)&(1<<i) > 0 {
+			k = i + 1
+			break
+		}
+	}
+
+	// Выбираем специальную вершину
+	s = 1
+
+	// Выбираем множетсва V1 и V2
+	// Самое тривиальное разбиение - по долям
+	V1, V2 := make([]int, n/2), make([]int, n/2)
+	for i := range n / 2 {
+		V1[i] = i
+		V2[i] = n/2 + i
+	}
+
+	// Для такого разбиения в двудольном графе m = 0
+	yes := hamiltonicity(V1, V2)
+
+	if yes {
+		fmt.Println("yes")
+	} else {
+		fmt.Println("no")
+	}
+}
+
+```
