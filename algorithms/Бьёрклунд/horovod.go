@@ -36,6 +36,8 @@ var irredpolys [7]uint16 = [7]uint16{
 var pows_gf2 []uint8
 var logs_gf2 []int
 
+// Генерация таблиц для эффеткивного умножения и деления в GF(2^k)
+// gently взято с хабра
 func generate_gf2() {
 	power := 1 << k
 	pows_gf2 = make([]uint8, power)
@@ -57,6 +59,7 @@ func generate_gf2() {
 	pows_gf2[power-1] = 1
 }
 
+// Умножение в GF(2^k)
 func mul_gf(a, b uint8) uint8 {
 	if a == 0 || b == 0 {
 		return 0
@@ -69,6 +72,7 @@ func mul_gf(a, b uint8) uint8 {
 	return pows_gf2[r]
 }
 
+// Деление в GF(2^k)
 func div_gf(a, b uint8) uint8 {
 	if b == 0 {
 		panic("division by zero")
@@ -84,6 +88,7 @@ func div_gf(a, b uint8) uint8 {
 	return pows_gf2[r]
 }
 
+// Рандомные числа в GF(2^k) за исключением чисел в neq
 func rand_gf(neq ...uint8) uint8 {
 	shift := 1 << k
 	var r uint8
@@ -161,9 +166,6 @@ func hamiltonicity_bipartite() bool {
 		V2[i] = n/2 + i
 	}
 
-	// Собираем множество маркировок
-	L := V2
-
 	// Формируем матрицу N, элементы которой
 	// являются N(u, v) - подмножествами (масками) V2,
 	// состоящими из вершин, соединённых с вершинами
@@ -190,8 +192,21 @@ func hamiltonicity_bipartite() bool {
 		}
 	}
 
+	// Очевидно
 	if transitions_amount < n {
 		return false
+	}
+
+	// Вводим переменные x_{u,v} для арок в G
+	VARS := make([][]uint8, n)
+	for i := range n {
+		VARS[i] = make([]uint8, n)
+	}
+
+	// Инициализируем матрицу под перманентом
+	T := make([][]uint8, len(V1))
+	for i := range len(V1) {
+		T[i] = make([]uint8, len(V1))
 	}
 
 	// Находим значение полинома в разных точках
@@ -199,15 +214,9 @@ func hamiltonicity_bipartite() bool {
 		// LABELED CYCLE COVER SUM
 		var lccs uint8
 
-		// Вводим переменные x_{u,v} для арок в G и присваиваем им случайные значения
-		VARS := make([][]uint8, n)
-		for i := range n {
-			VARS[i] = make([]uint8, n)
-		}
-
 		var r uint8
 
-		// Присваиваем значения для переменных x_{u,v}
+		// Присваиваем случайные значения для переменных x_{u,v}
 		for i := range n - 1 {
 			for j := n - 1; j > i; j-- {
 				if G[i][j] > 0 {
@@ -230,15 +239,9 @@ func hamiltonicity_bipartite() bool {
 			}
 		}
 
-		// Ищем все поднможества маркировок Y \subseteq L
-		L_subsets_amount := uint32(1 << len(L))
+		// Ищем все поднможества маркировок Y \subseteq L = V2
+		L_subsets_amount := uint32(1 << len(V2))
 		for Y_mask := uint32(1); Y_mask < L_subsets_amount; Y_mask++ {
-			// Инициализируем матрицу под перманентом
-			T := make([][]uint8, len(V1))
-			for i := range len(V1) {
-				T[i] = make([]uint8, len(V1))
-			}
-
 			// Находим коффициенты для матрицы T
 			for u := range len(V1) {
 				for v := range len(V1) {
@@ -246,7 +249,7 @@ func hamiltonicity_bipartite() bool {
 						continue
 					}
 					Z_mask := N[u][v] & Y_mask
-					for i := range len(V1) {
+					for i := range len(V2) {
 						if Z_mask&(1<<i) > 0 {
 							T[u][v] ^= mul_gf(VARS[u][i+len(V1)], VARS[i+len(V1)][v])
 						}
