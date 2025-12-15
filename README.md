@@ -11,7 +11,7 @@ np/
 │       └── gaechka.cpp
 └── lectures/
     ├── Лекция 1. Введение в NP/
-    │   └── leclture.md
+    │   └── intro_to_np.md
     └── Лекция 2. Сведение SAT/
-        └── lecture.md
+        └── sat_reduction.md
 ```
