@@ -110,39 +110,35 @@ func maxcut() []int {
 
 	// Здесь можно улучшить, по-умному перебирая решения i12 + i13 + i23 = N, N \in [m]
 	for N := m; N >= 0; N-- {
-		for i12 := m; i12 >= 0; i12-- {
-			for i13 := m; i13 >= 0; i13-- {
-				for i23 := m; i23 >= 0; i23-- {
-					if (i12 + i13 + i23) != N {
-						continue
-					}
-					// Заполняем матрицу с конкретными i12, i13 и i23
-					for j := range 3 {
-						for l := j + 1; l < 3; l++ {
-							for Lj := range H_part_size {
-								a = j*H_part_size + Lj
-								for Ll := range H_part_size {
-									b = l*H_part_size + Ll
-									if j > 0 {
-										Hi[a][b] = H[a][b] == uint8(i23)
-									} else if (j == 0) && (l > 1) {
-										Hi[a][b] = H[a][b] == uint8(i13)
-									} else {
-										Hi[a][b] = H[a][b] == uint8(i12)
-									}
-									H[b][a] = H[a][b]
+		for i12 := 0; i12 <= N; i12++ {
+			for i13 := 0; i13 <= N-i12; i13++ {
+				i23 := N - i12 - i13
+				// Заполняем матрицу с конкретными i12, i13 и i23
+				for j := range 3 {
+					for l := j + 1; l < 3; l++ {
+						for Lj := range H_part_size {
+							a = j*H_part_size + Lj
+							for Ll := range H_part_size {
+								b = l*H_part_size + Ll
+								if j > 0 {
+									Hi[a][b] = H[a][b] == uint8(i23)
+								} else if (j == 0) && (l > 1) {
+									Hi[a][b] = H[a][b] == uint8(i13)
+								} else {
+									Hi[a][b] = H[a][b] == uint8(i12)
 								}
+								H[b][a] = H[a][b]
 							}
 						}
 					}
+				}
 
-					// Можно оптимизировать, не заполняя матрицу каждый раз полностью,
-					// а при умножении считать веса
+				// Можно оптимизировать, не заполняя матрицу каждый раз полностью,
+				// а при умножении считать веса
 
-					tr := triangle(Hi)
-					if tr != nil {
-						return tr
-					}
+				tr := triangle(Hi)
+				if tr != nil {
+					return tr
 				}
 			}
 		}
