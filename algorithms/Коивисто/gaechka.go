@@ -4,174 +4,319 @@ package main
 
 import (
 	"fmt"
+	"math/big"
 )
 
-// n - количество вершин (округлённое вверх для кратности трём)
+// n - количество вершин
 var n int
 
 // m - количество ребёр
 var m int
 
-// G - исходный граф (с возможно доп. кол-вом вершин для кратности n трём)
+// G - исходный граф
 var G [][]bool
 
-// Считает количество выполненных ограничений при присваиваниях Li и Lj
-//
-// В нашем случае: Считает количество переходных ребёр при данных
-// раскрасках Li и Lj в подмножетсвах Vi и Vj графа G
-//
-// Параметры i и j нужны для определения подмножетсва вершин в
-// графе G (т.к. мы просто разбили их, поставив две "перегородки", то достаточно индекса)
-//
-// P.S. Работает примерно за O(n^2), если не считать сдвиги. Пока что-то быстрее не придумал
-// Еще можно прикрутить кэширование
-func w(Li int, Lj int, i int, j int) uint8 {
-	var transitions uint8
-	// Вспомогательные переменные для оптимизации подсчёта
-	var pshift, qshift int
-	// Количество вершин в подмножестве G
-	K := n / 3
-	for p := i * K; p < (i+1)*K; p++ {
-		pshift = p - i*K
-		for q := j * K; q < (j+1)*K; q++ {
-			qshift = q - j*K
-			if G[p][q] && ((1<<pshift)&Li > 0) != ((1<<qshift)&Lj > 0) {
+// Максимальный вес ограничения (в нашем случае, ребро либо переходое, либо нет)
+var R int = 1
+
+// Максимальный суммарный вес ограничений (в нашем случае, сколько рёбер может быть переходными)
+var M int
+
+// Количество бит, достаточное для кодирования количества выполненных ограничений (в нашем случае, переходных ребёр)
+var l int
+
+// Возвращает количество переходных ребёр между вершинами I и J
+// при их раскрасках xI и xJ соответственно
+func w(xI uint64, xJ uint64, I []int, J []int) int {
+	var transitions int
+
+	// Если множества вершин I и J равны, то необходимо поделить
+	// результат пополам из-за специфики реализации
+	var ii bool
+
+	for i, u := range I {
+		for j, v := range J {
+			if !ii && (u == v) {
+				ii = true
+			}
+			if G[u][v] && ((1<<i)&xI > 0) != ((1<<j)&xJ > 0) {
 				transitions += 1
 			}
 		}
 	}
-	if i == j {
+
+	if ii && transitions > 0 {
 		transitions /= 2
 	}
+
 	return transitions
 }
 
-// Ищет первый попавшийся треугольник в булевой матрице A
-// Возвращает отсортированный массив индексов вершин из разных долей
-func triangle(A [][]bool) []int {
-	for i := range len(A) {
-		for j := i + 1; j < len(A); j++ {
-			if !A[i][j] {
+// Умножает две матрицы с элементами *big.Int
+//
+// Если параметр T=true, то вычисляется A x B^T
+func matmul(A, B [][]*big.Int, T bool) [][]*big.Int {
+	N := len(A)
+
+	D := make([][]*big.Int, N)
+	for i := 0; i < N; i++ {
+		D[i] = make([]*big.Int, N)
+		for j := 0; j < N; j++ {
+			D[i][j] = new(big.Int)
+		}
+	}
+
+	tmp := new(big.Int)
+
+	for i := 0; i < N; i++ {
+		for k := 0; k < N; k++ {
+			aik := A[i][k]
+			if aik.Sign() == 0 {
 				continue
 			}
-			for k := j + 1; k < len(A); k++ {
-				if A[i][k] && A[j][k] {
-					return []int{i, j, k}
+
+			for j := 0; j < N; j++ {
+				var bkj *big.Int
+				if T {
+					bkj = B[j][k]
+				} else {
+					bkj = B[k][j]
 				}
+
+				if bkj.Sign() == 0 {
+					continue
+				}
+
+				tmp.Mul(aik, bkj)
+				D[i][j].Add(D[i][j], tmp)
 			}
 		}
 	}
-	return nil
+
+	return D
 }
 
-// Находит максимальный разрез, возвращая три маски для каждого поднможества вершин из G
-func maxcut() []int {
-	// Размер одного разбиения вершин графа
-	var k int = n / 3
+// Вычисляет скалярное произведение матриц с элементами *big.Int
+//
+// \sum_{i=1}^n \sum_{j=1}^n a_{ij} b_{ij}
+func matscalar(A, B [][]*big.Int) *big.Int {
+	N := len(A)
+	sum := big.NewInt(0)
+	tmp := new(big.Int)
 
-	// Непосредственно сами разбиения
-	var I, J, K []int
-
-	// Тривиальное распределение вершин по разбиениям
-	for i := range k {
-		I[i] = i
-		J[i] = k + i
-		K[i] = 2*k + i
-
+	for i := 0; i < N; i++ {
+		for j := 0; j < N; j++ {
+			if A[i][j].Sign() == 0 || B[i][j].Sign() == 0 {
+				continue
+			}
+			tmp.Mul(A[i][j], B[i][j])
+			sum.Add(sum, tmp)
+		}
 	}
 
-	// Оставшиеся вершины
-	var a int = n - 3*k
+	return sum
+}
 
-	// Суммарное количество вершин (присваиваний/раскрасок) в долях графа H
-	K := 3 * (1 << (n / 3))
+// Извлекает i-e size бит из числа
+func extractbits(a *big.Int, i int, size int) uint64 {
+	shifted := new(big.Int).Rsh(a, uint(i*size))
+	return shifted.Uint64() & (uint64(1)<<size - 1)
+}
 
-	// Трёхдольный граф H
-	H := make([][]uint8, K)
-	for i := range K {
-		H[i] = make([]uint8, K)
+// Находит максимальный разрез
+//
+// Возвращает раскраску вершин графа G
+func maxcut() []int8 {
+	l = n + 1
+	M = m * R
+
+	coloring := make([]int8, n)
+	for i := range n {
+		coloring[i] = -1
 	}
 
-	// Размер доли в H
-	var H_part_size int = 1 << (n / 3)
+	W, _ := countcut(coloring)
 
-	// Вспомогательные переменные для хранения индексов
-	var a, b int
+	for i := range n {
+		coloring[i] = 0
+		Wi, _ := countcut(coloring)
+		if Wi < W {
+			coloring[i] = 1
+		}
+	}
 
-	// Находим веса H вариантом из статьи
-	for j := range 3 {
-		for l := j + 1; l < 3; l++ {
-			for Lj := range H_part_size {
-				a = j*H_part_size + Lj
-				for Ll := range H_part_size {
-					b = l*H_part_size + Ll
-					if j > 0 {
-						H[a][b] = w(Lj, Ll, j, l) // i23
-					} else if (j == 0) && (l > 1) {
-						H[a][b] = w(Ll, Ll, l, l) + w(Lj, Ll, j, l) // i12
-					} else {
-						H[a][b] = w(Lj, Lj, j, j) + w(Ll, Ll, l, l) + w(Lj, Ll, j, l) // i13
+	return coloring
+}
 
-					}
-					H[b][a] = H[a][b]
-				}
+// Находит максимальное количество переходных ребёр и сколько раз оно достигается
+//
+// На вход подаётся частичная раскраска вершин графа G
+func countcut(coloring []int8) (int, uint64) {
+	// Получим списки раскрашенных и нераскрашенных вершин
+
+	uncolored := make([]int, 0, n)
+
+	colored := make([]int, 0, n)
+
+	for i, u := range coloring {
+		if u < 0 {
+			uncolored = append(uncolored, i)
+		} else {
+			colored = append(colored, i)
+		}
+	}
+
+	N := len(uncolored)
+
+	// Размер каждого разбиения нераскрашенных вершин графа
+	var p int = N / 3
+
+	// Разбиения нераскрашенных вершин графа
+	I, J, K := make([]int, p), make([]int, p), make([]int, p)
+
+	// Тривиальное распределение вершин для получения непересекающихся множеств
+	for i := range p {
+		I[i] = uncolored[i]
+		J[i] = uncolored[p+i]
+		K[i] = uncolored[2*p+i]
+	}
+
+	// Количество невошедших в разбиения вершин
+	var a int = N - 3*p
+
+	// Все вершины, для которых уже известны раскраски
+	rest := make([]int, 0, len(colored)+a)
+
+	// Кладём туда невошедшие в разбиения вершины, потому что бы потом будем перебирать для них раскраски
+	for i := range a {
+		rest = append(rest, uncolored[3*p+i])
+	}
+
+	// ...и уже раскрашенные вершины
+	rest = append(rest, colored...)
+
+	// Непосредственно переданная в функцию раскраска
+	var xcolored uint64
+
+	for i, u := range colored {
+		xcolored |= uint64(coloring[u]) << i
+	}
+
+	// Для возможности подсчёта и удобства прикрепляем уже раскрашенные вершины к множеству K
+	K = append(K, rest...)
+
+	// Размер матриц
+	q := 1 << p
+
+	// Вспомогательная переменная для хранения суммарного веса выполненных ограничений при
+	// конкретных присваиваниях (в нашем случае, переходных рёбер при конкретных раскрасках)
+	var r int
+
+	// Вспомогательная переменная для хранения \beta^r
+	var betar *big.Int
+
+	// Матрицу A заполним сразу, т.к. она не зависит от элементов из K
+	A := make([][]*big.Int, q)
+	for xI := range uint64(q) {
+		A[xI] = make([]*big.Int, q)
+		for xJ := range uint64(q) {
+			r = w(xI, xI, I, I) + w(xI, xJ, I, J) + w(xJ, xJ, J, J)
+			betar = new(big.Int)
+			betar.SetBit(betar, l*r, 1)
+			A[xI][xJ] = betar
+		}
+	}
+
+	// Остальные матрицы просто инициализируем
+
+	B := make([][]*big.Int, q)
+	for i := range uint64(q) {
+		B[i] = make([]*big.Int, q)
+	}
+
+	C := make([][]*big.Int, q)
+	for i := range uint64(q) {
+		C[i] = make([]*big.Int, q)
+	}
+
+	// Раскраска для уже раскрашенных вершин + невошедших в разбиения
+	var xrest uint64
+
+	// Максимальное количество переходных рёбер при переданной в функцию раскраске
+	var W int
+
+	// Наибольшее r, для которого \alpha_W > 0
+	var alphaW uint64
+
+	// Перебираем все раскаски невошедших в разбиения вершин
+	for xa := range 1 << a {
+		xrest = (xcolored << a) | uint64(xa)
+
+		// Случай когда количество нераскрашенных вершин < 3
+		//
+		// Тогда множество K содержит все вершины графа и мы
+		// счиатем для него количество переходных ребёр
+		if p < 1 {
+			r = w(xrest, xrest, K, K)
+			if r > W {
+				W = r
+				alphaW = 1
+			} else if r == W {
+				alphaW += 1
+			}
+			continue
+		}
+
+		for xI := range uint64(q) {
+			for k := range uint64(q) {
+				xK := (xrest << p) | k
+				r = w(xI, xK, I, K) + w(xK, xK, K, K)
+				betar = new(big.Int)
+				betar.SetBit(betar, l*r, 1)
+				B[xI][k] = betar
+			}
+		}
+
+		for xJ := range uint64(q) {
+			for k := range uint64(q) {
+				xK := (xrest << p) | k
+				r = w(xJ, xK, J, K)
+				betar = new(big.Int)
+				betar.SetBit(betar, l*r, 1)
+				C[xJ][k] = betar
+			}
+		}
+
+		D := matmul(B, C, true)
+
+		// Считаем именно сумму произведений соответствующих элементов
+		gamma := matscalar(A, D)
+
+		for r := M; r >= 0; r-- {
+			alpha := extractbits(gamma, r, l)
+			if alpha == 0 {
+				continue
+			}
+			if r > W {
+				W = r
+				alphaW = alpha
+				break
+			}
+			if r == W {
+				alphaW += 1
+				break
 			}
 		}
 	}
 
-	// Булевая матрица смежности для H при i12, i13 и i23
-	Hi := make([][]bool, K)
-	for i := range K {
-		Hi[i] = make([]bool, K)
-	}
-
-	// Здесь можно улучшить, по-умному перебирая решения i12 + i13 + i23 = N, N \in [m]
-	for N := m; N >= 0; N-- {
-		for i12 := m; i12 >= 0; i12-- {
-			for i13 := m; i13 >= 0; i13-- {
-				for i23 := m; i23 >= 0; i23-- {
-					if (i12 + i13 + i23) != N {
-						continue
-					}
-					// Заполняем матрицу с конкретными i12, i13 и i23
-					for j := range 3 {
-						for l := j + 1; l < 3; l++ {
-							for Lj := range H_part_size {
-								a = j*H_part_size + Lj
-								for Ll := range H_part_size {
-									b = l*H_part_size + Ll
-									if j > 0 {
-										Hi[a][b] = H[a][b] == uint8(i23)
-									} else if (j == 0) && (l > 1) {
-										Hi[a][b] = H[a][b] == uint8(i13)
-									} else {
-										Hi[a][b] = H[a][b] == uint8(i12)
-									}
-									H[b][a] = H[a][b]
-								}
-							}
-						}
-					}
-
-					// Можно улучшить, не заполняя матрицу по новой, а при умножении считать веса
-
-					tr := triangle(Hi)
-					if tr != nil {
-						return tr
-					}
-				}
-			}
-		}
-	}
-
-	return nil
+	return W, alphaW
 }
 
 func main() {
 	fmt.Scan(&n)
 
 	G = make([][]bool, n)
-	for i := 0; i < n; i++ {
+	for i := range n {
 		G[i] = make([]bool, n)
 	}
 
@@ -194,24 +339,21 @@ func main() {
 		return
 	}
 
-	partition := maxcut()
+	coloring := maxcut()
 
 	// Часть, к которой принадлежит первая вершина (её цвет)
-	color1 := partition[0] & 1
+	color1 := coloring[0]
 
 	// Вспомогательная переменная для вывода веришн
 	first := true
 
-	for i, mask := range partition {
-		for j := range n / 3 {
-			if (mask>>j)&1 == color1 {
-				if !first {
-					fmt.Print(" ")
-				}
-				first = false
-				fmt.Print(i*(n/3) + j + 1)
+	for i, color := range coloring {
+		if color == color1 {
+			if !first {
+				fmt.Print(" ")
 			}
+			first = false
+			fmt.Print(i + 1)
 		}
-
 	}
 }

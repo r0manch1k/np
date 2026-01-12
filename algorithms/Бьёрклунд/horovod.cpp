@@ -192,7 +192,7 @@ bool hamiltonicity_bipartite() {
             }
         }
 
-        // Делаем так, чтобы x_{u,v} != x_{v,u} при u == s || v == sы
+        // Делаем так, чтобы x_{u,v} != x_{v,u} при u == s || v == s
         for (int i = n - 1; i >= 0; i--) {
             if (VARS[i][s] == 0 || i == s) continue;
             if (i < s)
