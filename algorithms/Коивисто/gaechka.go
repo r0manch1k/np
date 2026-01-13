@@ -195,13 +195,6 @@ func countcut(coloring []int8) (int, uint64) {
 	// ...и уже раскрашенные вершины
 	rest = append(rest, colored...)
 
-	// Непосредственно переданная в функцию раскраска
-	var xcolored uint64
-
-	for i, u := range colored {
-		xcolored |= uint64(coloring[u]) << i
-	}
-
 	// Для возможности подсчёта и удобства прикрепляем уже раскрашенные вершины к множеству K
 	K = append(K, rest...)
 
@@ -237,6 +230,13 @@ func countcut(coloring []int8) (int, uint64) {
 	C := make([][]*big.Int, q)
 	for i := range uint64(q) {
 		C[i] = make([]*big.Int, q)
+	}
+
+	// Непосредственно переданная в функцию раскраска
+	var xcolored uint64
+
+	for i, u := range colored {
+		xcolored |= uint64(coloring[u]) << i
 	}
 
 	// Раскраска для уже раскрашенных вершин + невошедших в разбиения
